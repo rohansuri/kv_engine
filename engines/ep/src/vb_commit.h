@@ -34,11 +34,14 @@ public:
      * code which just wants to all kvstore::commit
      */
     explicit Commit(Collections::VB::Manifest& manifest,
+                    BlindWrite blindWrite = BlindWrite::No,
                     vbucket_state vbs = {},
                     SysErrorCallback sysErrorCallback = {});
 
     /// Object for updating the collection's meta-data during commit
     Collections::VB::Flush collections;
+
+    BlindWrite blindWrite;
 
     /**
      * state to be used by the commit if successful, written to the KVStore

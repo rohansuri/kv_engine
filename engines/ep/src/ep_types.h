@@ -44,6 +44,7 @@ enum class IsSystem : char { No, Yes };
 enum class IsDeleted : char { No, Yes };
 enum class IsCommitted : char { No, Yes };
 enum class WantsDropped : char { No, Yes };
+enum class BlindWrite : char { No, Yes };
 
 enum class CheckpointType : char {
     /**

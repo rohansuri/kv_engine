@@ -451,7 +451,13 @@ EPBucket::FlushResult EPBucket::flushVBucket_UNLOCKED(LockedVBucketPtr vb) {
         return true;
     };
 
-    VB::Commit commitData(vb->getManifest(), vbstate, callback);
+    BlindWrite blindWrite = BlindWrite::No;
+    if (toFlush.checkpointType == CheckpointType::Disk &&
+        toFlush.ranges.size() == 1 && toFlush.ranges[0].getStart() == 0) {
+        blindWrite = BlindWrite::Yes;
+    }
+
+    VB::Commit commitData(vb->getManifest(), blindWrite, vbstate, callback);
 
     vbucket_state& proposedVBState = commitData.proposedVBState;
 
@@ -893,7 +899,6 @@ bool EPBucket::commit(Vbid vbid, KVStore& kvstore, VB::Commit& commitData) {
     HdrMicroSecBlockTimer timer(
             &stats.diskCommitHisto, "disk_commit", stats.timingLog);
     const auto commit_start = std::chrono::steady_clock::now();
-
     const auto res = kvstore.commit(commitData);
     if (!res) {
         EP_LOG_WARN("KVBucket::commit: kvstore.commit failed {}", vbid);

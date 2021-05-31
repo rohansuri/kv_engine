@@ -838,6 +838,32 @@ void DCPLoopbackStreamTest::testBackfillAndInMemoryDuplicatePrepares(
               replicaVB->failovers->getLatestEntry().by_seqno);
 }
 
+// What's important is that the producer has "already persisted"
+// the items. And the backfilling starts from disk.
+//
+TEST_P(DCPLoopbackStreamTest, initial_backfill_snapshot_overwrites) {
+    constexpr int n = 3;
+
+    // Insert n keys.
+    for (int i = 0; i < n; i++) {
+        auto doc = makeStoredDocKey("k" + std::to_string(i));
+        EXPECT_EQ(cb::engine_errc::success, storeSet(doc));
+    }
+    // Persist them.
+    flushNodeIfPersistent(Node0);
+
+    // Overwrite all.
+    for (int i = 0; i < n; i++) {
+        auto doc = makeStoredDocKey("k" + std::to_string(i));
+        EXPECT_EQ(cb::engine_errc::success, storeSet(doc));
+    }
+    // Persist the overwrites.
+    flushNodeIfPersistent(Node0);
+
+    auto vb = engine->getVBucket(vbid);
+    EXPECT_EQ(vb->getNumItems(), n);
+}
+
 TEST_P(DCPLoopbackStreamTest,
        BackfillAndInMemoryDuplicatePrepares_partialSnapshot) {
     testBackfillAndInMemoryDuplicatePrepares(0, false);

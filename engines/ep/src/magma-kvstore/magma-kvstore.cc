@@ -1256,11 +1256,22 @@ int MagmaKVStore::saveDocs(VB::Commit& commitData, kvstats_ctx& kvctx) {
         if (req.getDocMeta().bySeqno > lastSeqno) {
             lastSeqno = req.getDocMeta().bySeqno;
         }
-        writeOps.emplace_back(Magma::WriteOperation::NewDocUpsert(
-                {req.getRawKey(), req.getRawKeyLen()},
-                {reinterpret_cast<char*>(&docMeta), sizeof(magmakv::MetaData)},
-                valSlice,
-                &req));
+        if (commitData.blindWrite == BlindWrite::Yes) {
+            writeOps.emplace_back(Magma::WriteOperation::NewDocInsert(
+                    {req.getRawKey(), req.getRawKeyLen()},
+                    {reinterpret_cast<char*>(&docMeta),
+                     sizeof(magmakv::MetaData)},
+                    valSlice,
+                    &req));
+
+        } else {
+            writeOps.emplace_back(Magma::WriteOperation::NewDocUpsert(
+                    {req.getRawKey(), req.getRawKeyLen()},
+                    {reinterpret_cast<char*>(&docMeta),
+                     sizeof(magmakv::MetaData)},
+                    valSlice,
+                    &req));
+        }
     }
 
     auto [getDroppedStatus, dropped] = getDroppedCollections(vbid);
